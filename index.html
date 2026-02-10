@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Uniformes | Agrofruti</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <img src="https://agrofrut.com.br/images/AGRO_FRUTI_h2_500png.png" alt="Logo" class="logo-img">
+        <h1 class="main-title">Sistema de Uniformes</h1>
+        <a href="analise.html" class="btn-analise">📊 Abrir Painel de Análise</a>
+    </header>
+
+    <main>
+        <section id="form-section">
+            <h3 class="section-badge">Nova Movimentação</h3>
+
+            <form id="uniforme-form">
+                <div class="input-row">
+                    <div>
+                        <label class="field-label">Tipo de Ação</label>
+                        <select id="solicitacao" onchange="ajustarFluxo()">
+                            <option value="">Selecione...</option>
+                            <option value="Entrada">Entrada (Compra)</option>
+                            <option value="Devolução">Devolução (Retorno)</option>
+                            <option value="Saída">Saída (Entrega)</option>
+                            <option value="Descarte">Descarte (Dano)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">Nome do Colaborador</label>
+                        <input type="text" id="colaborador" placeholder="Nome completo">
+
+                        <label class="field-label">Descrição do Item</label>
+                        <select id="descricao_item" onchange="verificarOutraDescricao()">
+                            <option value="">SELECIONE A DESCRIÇÃO...</option>
+                            <option value="CAMISA CINZA">CAMISA CINZA</option>
+                            <option value="CAMISA VERDE">CAMISA VERDE</option>
+                            <option value="CAMISA VERDE TREINAMENTO">CAMISA VERDE TREINAMENTO</option>
+                            <option value="CAMISA POLO AZUL">CAMISA POLO AZUL</option>
+                            <option value="CAMISA POLO AZUL ESCURA">CAMISA POLO AZUL ESCURA</option>
+                            <option value="CAMISA POLO BRANCA">CAMISA POLO BRANCA</option>
+                            <option value="CAMISA POLO CHUMBO">CAMISA POLO CHUMBO</option>
+                            <option value="CAMISA POLO CHUMBO TREINAMENTO">CAMISA POLO CHUMBO TREINAMENTO</option>
+                            <option value="CAMISA POLO VERDE">CAMISA POLO VERDE</option>
+                            <option value="CAMISA POLO VERDE TREINAMENTO">CAMISA POLO VERDE TREINAMENTO</option>
+                            <option value="CAMISA RIO AGRO">CAMISA RIO AGRO</option>
+                            <option value="BERMUDA RIO AGRO">BERMUDA RIO AGRO</option>
+                            <option value="CALÇA RIO AGRO">CALÇA RIO AGRO</option>
+                            <option value="BOTA RIO AGRO">BOTA RIO AGRO</option>
+                            <option value="OUTRA">OUTRA (DIGITAR ABAIXO)</option>
+                        </select>
+
+                        <input type="text" id="outra_descricao" class="hidden" placeholder="DIGITE O NOME DO ITEM"
+                            style="margin-top: 5px;">
+                    </div>
+                </div>
+
+                <div id="campos-dinamicos" class="hidden">
+                    <label class="field-label">Tipo do Item</label>
+                    <div class="selector-group">
+                        <input type="radio" name="tipo" id="t_camisa" value="Camisa" onchange="atualizarTamanhos()">
+                        <label for="t_camisa">Camisa</label>
+                        <input type="radio" name="tipo" id="t_bermuda" value="Bermuda" onchange="atualizarTamanhos()">
+                        <label for="t_bermuda">Bermuda</label>
+                        <input type="radio" name="tipo" id="t_calca" value="Calça" onchange="atualizarTamanhos()">
+                        <label for="t_calca">Calça</label>
+                        <input type="radio" name="tipo" id="t_bota" value="Bota" onchange="atualizarTamanhos()">
+                        <label for="t_bota">Bota</label>
+                    </div>
+
+                    <label class="field-label">Tamanho / Numeração</label>
+                    <div id="tamanho-container" class="selector-group">
+                        <small style="opacity: 0.5;">Aguardando item...</small>
+                    </div>
+
+                    <div class="input-row">
+                        <div>
+                            <label class="field-label">Quantidade</label>
+                            <input type="number" id="quantidade" value="1" min="1">
+                        </div>
+                        <div>
+                            <label class="field-label">Data</label>
+                            <input type="date" id="data_entrega">
+                        </div>
+                    </div>
+
+                    <label class="field-label">Condição</label>
+                    <div class="selector-group">
+                        <input type="radio" name="condicao" id="c_novo" value="Novo" checked>
+                        <label for="c_novo">Novo</label>
+                        <input type="radio" name="condicao" id="c_usado" value="Usado/Lavado">
+                        <label for="c_usado">Usado/Lavado</label>
+                    </div>
+
+                    <label class="field-label">Observação</label>
+                    <textarea id="observacao" placeholder="Opcional..."></textarea>
+
+                    <button type="button" class="btn-add" onclick="adicionarAoCarrinho()">+ Adicionar Item à
+                        Lista</button>
+
+                    <div id="carrinho" class="carrinho-container hidden">
+                        <h4 style="margin-top:0; color: #b3d1a8; font-size: 0.8rem;">ITENS PARA PROCESSAR:</h4>
+                        <div id="lista-carrinho"></div>
+                    </div>
+
+                    <button type="button" onclick="confirmarTudo()" class="btn-primary">Finalizar Registro</button>
+                </div>
+            </form>
+        </section>
+
+        <section style="margin-top: 40px;">
+            <div style="display:flex; justify-content: space-between; align-items: center;">
+                <h3 class="section-badge">Histórico de Lançamentos</h3>
+                <button onclick="exportarExcel()"
+                    style="background:none; border:1px solid #5c8c49; color:#5c8c49; cursor:pointer; padding:5px 10px; border-radius:4px; font-size: 0.7rem; font-weight:bold;">
+                    EXPORTAR CSV
+                </button>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Colaborador</th>
+                            <th>Descrição Item</th>
+                            <th>Ação</th>
+                            <th>Item</th>
+                            <th>Tam.</th>
+                            <th>Cond.</th>
+                            <th>Qtd</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-estoque"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
