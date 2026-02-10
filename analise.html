@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Analítico | Agrofruti</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Work+Sans:400,600,700');
+
+        body {
+            margin: 0;
+            font-family: 'Work Sans', sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            text-align: center;
+            border-bottom: 2px solid #5c8c49;
+        }
+
+        .nav-container {
+            margin-bottom: 15px;
+        }
+
+        .btn-nav {
+            text-decoration: none;
+            color: #b3d1a8;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            border: 1px solid #5c8c49;
+            padding: 8px 20px;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .btn-nav:hover {
+            background: #5c8c49;
+            color: white;
+        }
+
+        main {
+            max-width: 1200px;
+            width: 95%;
+            margin: 40px auto;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            border-top: 4px solid #5c8c49;
+            text-align: center;
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 0.8rem;
+            color: #b3d1a8;
+            text-transform: uppercase;
+        }
+
+        .card .value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .section-badge {
+            background-color: #5c8c49;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .table-wrapper {
+            background: white;
+            border-radius: 8px;
+            overflow-x: auto;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 1200px;
+            /* Aumentado levemente para acomodar a nova coluna */
+        }
+
+        th {
+            background: #2e2d2d;
+            color: white;
+            text-align: left;
+            padding: 10px;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background: #f8f9fa;
+            font-size: 0.75rem;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .editable {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .editable:hover {
+            background: #f0f7ee;
+        }
+
+        .editable:focus {
+            background: #fffbe6;
+            outline: 1px solid #ffc107;
+            color: #000;
+        }
+
+        .col-obs,
+        .col-desc {
+            font-style: italic;
+            color: #5c8c49;
+            text-transform: uppercase;
+        }
+
+        .btn-delete {
+            color: #dc3545;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border: none;
+            background: none;
+            padding: 0 10px;
+        }
+
+        .btn-delete:hover {
+            color: #a71d2a;
+            scale: 1.2;
+        }
+
+        .btn-export {
+            background: #5cb85c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="nav-container"><a href="index.html" class="btn-nav">← Voltar ao Registro</a></div>
+        <h1 style="margin:0; font-size: 1.5rem; color: #5c8c49;">ANÁLISE DE MOVIMENTAÇÕES (CLOUD)</h1>
+    </header>
+
+    <main>
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>Itens Filtrados</h3>
+                <div class="value" id="total-movs">0</div>
+            </div>
+            <div class="card" style="border-top-color: #28a745;">
+                <h3>Entradas</h3>
+                <div class="value" id="total-entradas">0</div>
+            </div>
+            <div class="card" style="border-top-color: #dc3545;">
+                <h3>Saídas</h3>
+                <div class="value" id="total-saidas">0</div>
+            </div>
+            <div class="card" style="border-top-color: #ffc107;">
+                <h3>Saldo do Filtro</h3>
+                <div class="value" id="saldo-atual">0</div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <span class="section-badge">Base de Dados Supabase</span>
+            <button class="btn-export" onclick="exportarCSV()">Exportar CSV</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data<br><select class="filter-select" onchange="filtrar()">
+                                <option value="">Tudo</option>
+                            </select></th>
+                        <th>Colaborador<br><select class="filter-select" onchange="filtrar()">
+                                <option value="">Tudo</option>
+                            </select></th>
+                        <th>Descrição Item<br><select class="filter-select" onchange="filtrar()">
+                                <option value="">Tudo</option>
+                            </select></th>
+                        <th>Ação<br><select class="filter-select" onchange="filtrar()">
+                                <option value="">Tudo</option>
+                            </select></th>
+                        <th>Item<br><select class="filter-select" onchange="filtrar()">
+                                <option value="">Tudo</option>
+                            </select></th>
+                        <th>Tam<br><select class="filter-select" onchange="filtrar()">
+                                <option value="">Tudo</option>
+                            </select></th>
+                        <th>Cond.<br><select class="filter-select" onchange="filtrar()">
+                                <option value="">Tudo</option>
+                            </select></th>
+                        <th>Qtd</th>
+                        <th>Obs (Editar)</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="corpo-analise"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://gbylbeqlfzwisuclncko.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdieWxiZXFsZnp3aXN1Y2xuY2tvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2Nzg1MTksImV4cCI6MjA4NjI1NDUxOX0.gc6Kto6ceGhHyW9WrMABCQNVdHp0I7f3ndSFxco1UXU';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let lancamentos = [];
+
+        document.addEventListener('DOMContentLoaded', buscarDados);
+
+        async function buscarDados() {
+            const { data, error } = await _supabase
+                .from('movimentacoes')
+                .select('*')
+                .order('data', { ascending: false });
+
+            if (error) {
+                console.error("Erro:", error.message);
+            } else {
+                lancamentos = data;
+                renderizarPagina();
+            }
+        }
+
+        function renderizarPagina() {
+            const corpo = document.getElementById('corpo-analise');
+            corpo.innerHTML = "";
+
+            lancamentos.forEach((l) => {
+                const dataF = l.data.split('-').reverse().join('/');
+                corpo.innerHTML += `
+                    <tr data-id="${l.id}">
+                        <td class="editable" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'data')">${dataF}</td>
+                        <td class="editable" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'colaborador')">${l.colaborador}</td>
+                        <td class="editable col-desc" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'descricao_item')">${l.descricao_item || '-'}</td>
+                        <td style="font-weight:bold; color: ${l.acao === 'Saída' || l.acao === 'Descarte' ? '#d9534f' : '#5cb85c'}">${l.acao}</td>
+                        <td class="editable" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'tipo')">${l.tipo}</td>
+                        <td class="editable" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'tamanho')">${l.tamanho}</td>
+                        <td>${l.condicao}</td>
+                        <td class="editable" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'qtd')"><strong>${l.qtd}</strong></td>
+                        <td class="col-obs editable" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'observacao')">${l.observacao || '-'}</td>
+                        <td><button class="btn-delete" onclick="excluirRegistro('${l.id}')">&times;</button></td>
+                    </tr>
+                `;
+            });
+
+            preencherFiltros();
+            filtrar();
+        }
+
+        async function salvarEdicao(id, elemento, campo) {
+            let novoValor = elemento.innerText.trim();
+
+            if (['observacao', 'colaborador', 'descricao_item', 'tipo', 'tamanho'].includes(campo)) novoValor = novoValor.toUpperCase();
+            if (campo === 'qtd') novoValor = parseInt(novoValor) || 0;
+            if (campo === 'data') {
+                const partes = novoValor.split('/');
+                if (partes.length === 3) novoValor = `${partes[2]}-${partes[1]}-${partes[0]}`;
+            }
+
+            const { error } = await _supabase
+                .from('movimentacoes')
+                .update({ [campo]: novoValor })
+                .eq('id', id);
+
+            if (error) {
+                alert("Erro ao atualizar: " + error.message);
+                buscarDados();
+            } else {
+                const index = lancamentos.findIndex(item => item.id === id);
+                lancamentos[index][campo] = novoValor;
+                filtrar();
+            }
+        }
+
+        async function excluirRegistro(id) {
+            if (!confirm("⚠️ Excluir este registro permanentemente?")) return;
+            const { error } = await _supabase.from('movimentacoes').delete().eq('id', id);
+            if (error) alert("Erro: " + error.message);
+            else {
+                lancamentos = lancamentos.filter(item => item.id !== id);
+                renderizarPagina();
+            }
+        }
+
+        function preencherFiltros() {
+            const selects = document.querySelectorAll('.filter-select');
+            const chaves = ['data', 'colaborador', 'descricao_item', 'acao', 'tipo', 'tamanho', 'condicao'];
+
+            chaves.forEach((chave, i) => {
+                const select = selects[i];
+                if (!select) return;
+                const valorAtual = select.value;
+                const opcoes = [...new Set(lancamentos.map(l =>
+                    chave === 'data' ? l.data.split('-').reverse().join('/') : l[chave]
+                ))].sort();
+
+                select.innerHTML = '<option value="">Tudo</option>';
+                opcoes.forEach(opt => {
+                    if (opt) select.innerHTML += `<option value="${opt}" ${opt === valorAtual ? 'selected' : ''}>${opt}</option>`;
+                });
+            });
+        }
+
+        function filtrar() {
+            const selects = document.querySelectorAll('.filter-select');
+            const filtros = Array.from(selects).map(s => s.value.toLowerCase());
+            const linhas = document.querySelectorAll('#corpo-analise tr');
+            let ent = 0, sai = 0, cont = 0;
+
+            linhas.forEach(linha => {
+                const tds = linha.querySelectorAll('td');
+                // Ajuste dos índices para bater com a nova ordem das colunas
+                const match = filtros.every((f, i) => f === "" || tds[i].innerText.toLowerCase() === f);
+
+                if (match) {
+                    linha.style.display = "";
+                    cont++;
+                    const acao = tds[3].innerText; // Ação agora é a 4ª coluna (índice 3)
+                    const qtd = parseInt(tds[7].innerText) || 0; // Qtd agora é a 8ª coluna (índice 7)
+                    (acao === 'Entrada' || acao === 'Devolução') ? ent += qtd : sai += qtd;
+                } else {
+                    linha.style.display = "none";
+                }
+            });
+
+            document.getElementById('total-movs').innerText = cont;
+            document.getElementById('total-entradas').innerText = ent;
+            document.getElementById('total-saidas').innerText = sai;
+            document.getElementById('saldo-atual').innerText = ent - sai;
+        }
+
+        function exportarCSV() {
+            const visiveis = Array.from(document.querySelectorAll('#corpo-analise tr')).filter(tr => tr.style.display !== "none");
+            if (visiveis.length === 0) return alert("Sem dados!");
+            let csv = "\ufeffData;Colaborador;Descricao;Ação;Item;Tam;Condição;Qtd;Obs\n";
+            visiveis.forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                csv += `${tds[0].innerText};${tds[1].innerText};${tds[2].innerText};${tds[3].innerText};${tds[4].innerText};${tds[5].innerText};${tds[6].innerText};${tds[7].innerText};${tds[8].innerText}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "analise_agrofruti_cloud.csv";
+            link.click();
+        }
+    </script>
+</body>
+
+</html>
