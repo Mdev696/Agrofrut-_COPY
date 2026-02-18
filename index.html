@@ -11,6 +11,10 @@
 <body>
 
     <header>
+        <button onclick="deslogar()"
+            style="position: absolute; top: 10px; right: 10px; background: none; border: 1px solid #ff6b6b; color: #ff6b6b; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.7rem;">Sair
+            do Sistema</button>
+
         <img src="https://agrofrut.com.br/images/AGRO_FRUTI_h2_500png.png" alt="Logo" class="logo-img">
         <h1 class="main-title">Sistema de Uniformes</h1>
         <a href="analise.html" class="btn-analise">📊 Abrir Painel de Análise</a>
@@ -135,6 +139,7 @@
                             <th>Tam.</th>
                             <th>Cond.</th>
                             <th>Qtd</th>
+                            <th>Responsável</th>
                         </tr>
                     </thead>
                     <tbody id="corpo-estoque"></tbody>
@@ -145,6 +150,19 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
+
+    <div id="auth-overlay" class="auth-screen">
+        <div class="auth-card">
+            <img src="https://agrofrut.com.br/images/AGRO_FRUTI_h2_500png.png" alt="Logo" class="auth-logo">
+            <h2>Acesso ao Sistema</h2>
+            <div class="auth-inputs">
+                <input type="email" id="auth-email" placeholder="E-mail">
+                <input type="password" id="auth-senha" placeholder="Senha">
+                <button onclick="realizarLogin()" id="btn-login" class="btn-auth">Entrar</button>
+            </div>
+            <p id="auth-erro" class="error-msg"></p>
+        </div>
+    </div>
 </body>
 
 </html>

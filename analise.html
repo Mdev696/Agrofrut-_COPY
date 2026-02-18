@@ -104,8 +104,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
-            min-width: 1200px;
-            /* Aumentado levemente para acomodar a nova coluna */
+            min-width: 1300px;
         }
 
         th {
@@ -237,6 +236,9 @@
                                 <option value="">Tudo</option>
                             </select></th>
                         <th>Qtd</th>
+                        <th>Responsável<br><select class="filter-select" onchange="filtrar()">
+                                <option value="">Tudo</option>
+                            </select></th>
                         <th>Obs (Editar)</th>
                         <th>Ação</th>
                     </tr>
@@ -248,7 +250,7 @@
 
     <script>
         const SUPABASE_URL = 'https://gbylbeqlfzwisuclncko.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdieWxiZXFsZnp3aXN1Y2xuY2tvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2Nzg1MTksImV4cCI6MjA4NjI1NDUxOX0.gc6Kto6ceGhHyW9WrMABCQNVdHp0I7f3ndSFxco1UXU';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdieWxiZXFsZnp3aXN1Y2xuY2tvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2Nzg1MTksImV4cCI6MjA4NjI1NDUxOX0.gc6Kto6ceGhHyW9WrMABCQNVdHp0I7f3ndSFxco1UXU'; // Use a chave que funcionou no index.html
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let lancamentos = [];
@@ -274,7 +276,9 @@
             corpo.innerHTML = "";
 
             lancamentos.forEach((l) => {
-                const dataF = l.data.split('-').reverse().join('/');
+                const dataF = l.data ? l.data.split('-').reverse().join('/') : '-';
+                const responsavel = l.registrado_por || 'Antigo';
+
                 corpo.innerHTML += `
                     <tr data-id="${l.id}">
                         <td class="editable" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'data')">${dataF}</td>
@@ -285,6 +289,7 @@
                         <td class="editable" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'tamanho')">${l.tamanho}</td>
                         <td>${l.condicao}</td>
                         <td class="editable" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'qtd')"><strong>${l.qtd}</strong></td>
+                        <td style="font-size: 0.75rem; color: #666;">${responsavel}</td>
                         <td class="col-obs editable" contenteditable="true" onblur="salvarEdicao('${l.id}', this, 'observacao')">${l.observacao || '-'}</td>
                         <td><button class="btn-delete" onclick="excluirRegistro('${l.id}')">&times;</button></td>
                     </tr>
@@ -332,15 +337,18 @@
 
         function preencherFiltros() {
             const selects = document.querySelectorAll('.filter-select');
-            const chaves = ['data', 'colaborador', 'descricao_item', 'acao', 'tipo', 'tamanho', 'condicao'];
+            // Ordem: Data, Colab, Desc, Ação, Item, Tam, Cond, Resp
+            const chaves = ['data', 'colaborador', 'descricao_item', 'acao', 'tipo', 'tamanho', 'condicao', 'registrado_por'];
 
             chaves.forEach((chave, i) => {
                 const select = selects[i];
                 if (!select) return;
                 const valorAtual = select.value;
-                const opcoes = [...new Set(lancamentos.map(l =>
-                    chave === 'data' ? l.data.split('-').reverse().join('/') : l[chave]
-                ))].sort();
+                const opcoes = [...new Set(lancamentos.map(l => {
+                    if (chave === 'data' && l.data) return l.data.split('-').reverse().join('/');
+                    if (chave === 'registrado_por') return l.registrado_por || 'Antigo';
+                    return l[chave];
+                }))].sort();
 
                 select.innerHTML = '<option value="">Tudo</option>';
                 opcoes.forEach(opt => {
@@ -357,33 +365,41 @@
 
             linhas.forEach(linha => {
                 const tds = linha.querySelectorAll('td');
-                // Ajuste dos índices para bater com a nova ordem das colunas
-                const match = filtros.every((f, i) => f === "" || tds[i].innerText.toLowerCase() === f);
+                // Índices das colunas que possuem filtros: 0,1,2,3,4,5,6 e 8 (Responsável)
+                const indicesParaChecar = [0, 1, 2, 3, 4, 5, 6, 8];
+                const match = indicesParaChecar.every((tdIndex, filterIndex) => {
+                    const f = filtros[filterIndex];
+                    return f === "" || tds[tdIndex].innerText.toLowerCase() === f;
+                });
 
                 if (match) {
                     linha.style.display = "";
                     cont++;
-                    const acao = tds[3].innerText; // Ação agora é a 4ª coluna (índice 3)
-                    const qtd = parseInt(tds[7].innerText) || 0; // Qtd agora é a 8ª coluna (índice 7)
+                    const acao = tds[3].innerText;
+                    const qtd = parseInt(tds[7].innerText) || 0;
                     (acao === 'Entrada' || acao === 'Devolução') ? ent += qtd : sai += qtd;
                 } else {
                     linha.style.display = "none";
                 }
             });
 
+            // Ajuste de Lógica: Saldo não pode ser menor que zero
+            const saldoCalculado = ent - sai;
+
             document.getElementById('total-movs').innerText = cont;
             document.getElementById('total-entradas').innerText = ent;
             document.getElementById('total-saidas').innerText = sai;
-            document.getElementById('saldo-atual').innerText = ent - sai;
+            document.getElementById('saldo-atual').innerText = saldoCalculado < 0 ? 0 : saldoCalculado;
         }
 
         function exportarCSV() {
             const visiveis = Array.from(document.querySelectorAll('#corpo-analise tr')).filter(tr => tr.style.display !== "none");
             if (visiveis.length === 0) return alert("Sem dados!");
-            let csv = "\ufeffData;Colaborador;Descricao;Ação;Item;Tam;Condição;Qtd;Obs\n";
+            let csv = "\ufeffData;Colaborador;Descricao;Ação;Item;Tam;Condição;Qtd;Responsavel;Obs\n";
             visiveis.forEach(tr => {
                 const tds = tr.querySelectorAll('td');
-                csv += `${tds[0].innerText};${tds[1].innerText};${tds[2].innerText};${tds[3].innerText};${tds[4].innerText};${tds[5].innerText};${tds[6].innerText};${tds[7].innerText};${tds[8].innerText}\n`;
+                // Exporta todas as colunas incluindo a nova do Responsável (td 8)
+                csv += `${tds[0].innerText};${tds[1].innerText};${tds[2].innerText};${tds[3].innerText};${tds[4].innerText};${tds[5].innerText};${tds[6].innerText};${tds[7].innerText};${tds[8].innerText};${tds[9].innerText}\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");

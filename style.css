@@ -226,3 +226,61 @@ td {
         gap: 0;
     }
 }
+
+/* Tela de bloqueio total */
+.auth-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #1a1a1a;
+    /* Cor sólida para não vazar informações antes do login */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    /* Acima de qualquer outro elemento */
+}
+
+.auth-card {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    color: #333;
+}
+
+.auth-logo {
+    max-width: 180px;
+    margin-bottom: 20px;
+}
+
+.auth-inputs input {
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+}
+
+.btn-auth {
+    width: 100%;
+    padding: 15px;
+    background-color: #5c8c49;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.error-msg {
+    color: #d9534f;
+    font-size: 0.85rem;
+    margin-top: 15px;
+    display: none;
+    font-weight: bold;
+}

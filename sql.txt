@@ -1,0 +1,8 @@
+-- 1. Adiciona a coluna nova (Seguro: não mexe nos dados atuais)
+ALTER TABLE movimentacoes 
+ADD COLUMN registrado_por TEXT;
+
+-- 2. (Opcional) Preenche os registros antigos para não ficarem vazios
+UPDATE movimentacoes 
+SET registrado_por = 'Sistema (Antigo)' 
+WHERE registrado_por IS NULL;
